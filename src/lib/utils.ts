@@ -1,5 +1,4 @@
 import { clsx, type ClassValue } from "clsx";
-import { saveAs } from "file-saver";
 import { twMerge } from "tailwind-merge";
 import { STORAGE_KEY, type WarkahItem } from "@/types/warkah";
 
@@ -64,72 +63,4 @@ export function clearStorage(): void {
   } catch {
     // abaikan
   }
-}
-
-// ---------------------------------------------------------------------------
-// Backup & Restore JSON
-// ---------------------------------------------------------------------------
-
-function asText(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return String(value);
-  return "";
-}
-
-function asStringOrNumber(value: unknown): string | number {
-  return typeof value === "number" ? value : asText(value);
-}
-
-/** Normalisasi satu objek mentah menjadi WarkahItem; null jika tidak valid. */
-function normalizeItem(raw: unknown): WarkahItem | null {
-  if (typeof raw !== "object" || raw === null) return null;
-  const r = raw as Record<string, unknown>;
-  const pemohon = asText(r.pemohon).trim();
-  if (!pemohon) return null;
-  return {
-    id: typeof r.id === "string" && r.id ? r.id : generateId(),
-    no: 0,
-    pemohon,
-    desa: asText(r.desa),
-    kecamatan: asText(r.kecamatan),
-    noGu: asStringOrNumber(r.noGu),
-    tahun: asStringOrNumber(r.tahun),
-    luas: asStringOrNumber(r.luas),
-    nib: asText(r.nib), // selalu string: leading zero tetap utuh
-    su: asText(r.su) || "-",
-    rakNo: asStringOrNumber(r.rakNo),
-    rakBaris: asStringOrNumber(r.rakBaris),
-    rakKolom: asStringOrNumber(r.rakKolom),
-  };
-}
-
-/** Parse isi file backup (format { items: [...] } atau array langsung). */
-export function parseBackup(text: string): WarkahItem[] | null {
-  try {
-    const parsed: unknown = JSON.parse(text);
-    const list: unknown = Array.isArray(parsed)
-      ? parsed
-      : typeof parsed === "object" && parsed !== null
-        ? (parsed as { items?: unknown }).items
-        : null;
-    if (!Array.isArray(list)) return null;
-    const items = list.map(normalizeItem).filter((i): i is WarkahItem => i !== null);
-    if (items.length === 0 && list.length > 0) return null;
-    return renumber(items);
-  } catch {
-    return null;
-  }
-}
-
-export function downloadBackup(items: WarkahItem[]): string {
-  const payload = {
-    app: "warkah",
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    items,
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-  const fileName = `warkah_backup_${new Date().toISOString().slice(0, 10)}.json`;
-  saveAs(blob, fileName);
-  return fileName;
 }
