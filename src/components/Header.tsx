@@ -1,37 +1,16 @@
 "use client";
 
-import { useRef, type ChangeEvent } from "react";
-import { DatabaseBackup, Download, FileSpreadsheet, Trash2, Upload } from "lucide-react";
+import { Download, FileSpreadsheet, Trash2 } from "lucide-react";
 
 interface HeaderProps {
   total: number;
   onDownload: () => void;
-  onBackup: () => void;
-  onRestore: (file: File) => void;
   /** Dipanggil saat tombol diklik; konfirmasi modal ditangani oleh parent. */
   onRequestClearAll: () => void;
   downloading?: boolean;
 }
 
-const secondaryBtn =
-  "inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
-
-export default function Header({
-  total,
-  onDownload,
-  onBackup,
-  onRestore,
-  onRequestClearAll,
-  downloading,
-}: HeaderProps) {
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const handleFile = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) onRestore(file);
-    e.target.value = ""; // izinkan memilih file yang sama lagi
-  };
-
+export default function Header({ total, onDownload, onRequestClearAll, downloading }: HeaderProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
@@ -54,22 +33,6 @@ export default function Header({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={onBackup} disabled={total === 0} className={secondaryBtn}>
-            <DatabaseBackup className="h-4 w-4" aria-hidden />
-            Backup JSON
-          </button>
-          <button type="button" onClick={() => fileRef.current?.click()} className={secondaryBtn}>
-            <Upload className="h-4 w-4" aria-hidden />
-            Restore JSON
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/json,.json"
-            onChange={handleFile}
-            className="hidden"
-            aria-label="Pilih file backup JSON"
-          />
           <button
             type="button"
             onClick={onDownload}
@@ -83,7 +46,7 @@ export default function Header({
             type="button"
             onClick={onRequestClearAll}
             disabled={total === 0}
-            className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Trash2 className="h-4 w-4" aria-hidden />
             Hapus Semua Data

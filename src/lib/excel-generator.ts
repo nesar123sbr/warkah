@@ -75,6 +75,9 @@ export async function buildWarkahWorkbook(
 
   const ws = wb.addWorksheet(`Warkah ${year}`);
   ws.columns = COLUMN_WIDTHS.map((width) => ({ width }));
+  ws.views = [{ showGridLines: true }];
+  ws.getRow(1).height = 28;
+  for (const r of [2, 3, 4]) ws.getRow(r).height = 22;
 
   // Judul
   ws.mergeCells("A1:L1");
@@ -104,6 +107,7 @@ export async function buildWarkahWorkbook(
   items.forEach((item, index) => {
     const rowNumber = 5 + index;
     const row = ws.getRow(rowNumber);
+    row.height = 20;
 
     const values: (string | number)[] = [
       item.no,

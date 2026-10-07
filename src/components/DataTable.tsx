@@ -9,7 +9,7 @@ interface DataTableProps {
   items: WarkahItem[];
   editingId: string | null;
   onEdit: (item: WarkahItem) => void;
-  onDelete: (id: string) => void;
+  onRequestDelete: (item: WarkahItem) => void;
 }
 
 type ColumnKey = Exclude<keyof WarkahItem, "id" | "no">;
@@ -28,7 +28,7 @@ const COLUMNS: { key: ColumnKey; label: string; width: string; align?: "left" }[
   { key: "rakKolom", label: "Kolom", width: "min-w-16" },
 ];
 
-export default function DataTable({ items, editingId, onEdit, onDelete }: DataTableProps) {
+export default function DataTable({ items, editingId, onEdit, onRequestDelete }: DataTableProps) {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -119,9 +119,7 @@ export default function DataTable({ items, editingId, onEdit, onDelete }: DataTa
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (window.confirm(`Hapus data "${item.pemohon}"?`)) onDelete(item.id);
-                        }}
+                        onClick={() => onRequestDelete(item)}
                         title="Hapus"
                         aria-label={`Hapus ${item.pemohon}`}
                         className="rounded p-1.5 text-red-500 hover:bg-red-50"

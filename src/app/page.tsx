@@ -9,10 +9,8 @@ import Toast, { type ToastMessage } from "@/components/Toast";
 import { downloadWarkahExcel } from "@/lib/excel-generator";
 import {
   clearStorage,
-  downloadBackup,
   generateId,
   loadFromStorage,
-  parseBackup,
   renumber,
   saveToStorage,
 } from "@/lib/utils";
@@ -25,7 +23,7 @@ export default function Home() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
-  const [pendingRestore, setPendingRestore] = useState<WarkahItem[] | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<WarkahItem | null>(null);
 
   const showToast = useCallback((message: string, type: ToastMessage["type"] = "success") => {
     setToast({ id: Date.now(), message, type });
@@ -62,14 +60,14 @@ export default function Home() {
     [showToast],
   );
 
-  const handleDelete = useCallback(
-    (id: string) => {
-      setItems((prev) => renumber(prev.filter((it) => it.id !== id)));
-      setEditingId((current) => (current === id ? null : current));
-      showToast("Data berhasil dihapus");
-    },
-    [showToast],
-  );
+  const handleConfirmDelete = useCallback(() => {
+    if (!pendingDelete) return;
+    const id = pendingDelete.id;
+    setItems((prev) => renumber(prev.filter((it) => it.id !== id)));
+    setEditingId((current) => (current === id ? null : current));
+    setPendingDelete(null);
+    showToast("Data berhasil dihapus");
+  }, [pendingDelete, showToast]);
 
   const handleClearAll = useCallback(() => {
     setItems([]);
@@ -92,34 +90,6 @@ export default function Home() {
     }
   }, [items, showToast]);
 
-  const handleBackup = useCallback(() => {
-    downloadBackup(items);
-    showToast("Backup JSON berhasil diunduh");
-  }, [items, showToast]);
-
-  const applyRestore = useCallback(
-    (restored: WarkahItem[]) => {
-      setItems(restored);
-      setEditingId(null);
-      setPendingRestore(null);
-      showToast(`Data berhasil diimpor (${restored.length} baris)`);
-    },
-    [showToast],
-  );
-
-  const handleRestore = useCallback(
-    async (file: File) => {
-      const parsed = parseBackup(await file.text());
-      if (!parsed) {
-        showToast("File backup tidak valid", "error");
-        return;
-      }
-      if (items.length > 0) setPendingRestore(parsed);
-      else applyRestore(parsed);
-    },
-    [items.length, applyRestore, showToast],
-  );
-
   const editingItem = items.find((it) => it.id === editingId) ?? null;
 
   return (
@@ -127,8 +97,6 @@ export default function Home() {
       <Header
         total={items.length}
         onDownload={handleDownload}
-        onBackup={handleBackup}
-        onRestore={handleRestore}
         onRequestClearAll={() => setConfirmClear(true)}
         downloading={downloading}
       />
@@ -143,25 +111,25 @@ export default function Home() {
           items={items}
           editingId={editingId}
           onEdit={(item) => setEditingId(item.id)}
-          onDelete={handleDelete}
+          onRequestDelete={setPendingDelete}
         />
       </main>
 
       <ConfirmDialog
         open={confirmClear}
         title="Hapus semua data?"
-        message={`Seluruh ${items.length} baris data akan dihapus permanen. Pastikan Anda sudah melakukan Backup JSON bila diperlukan.`}
+        message={`Seluruh ${items.length} baris data akan dihapus permanen.`}
         confirmLabel="Ya, Hapus Semua"
         onConfirm={handleClearAll}
         onCancel={() => setConfirmClear(false)}
       />
       <ConfirmDialog
-        open={pendingRestore !== null}
-        title="Timpa data saat ini?"
-        message={`Restore akan mengganti ${items.length} baris data saat ini dengan ${pendingRestore?.length ?? 0} baris dari file backup.`}
-        confirmLabel="Ya, Timpa Data"
-        onConfirm={() => pendingRestore && applyRestore(pendingRestore)}
-        onCancel={() => setPendingRestore(null)}
+        open={pendingDelete !== null}
+        title="Hapus baris data?"
+        message={`Hapus baris data milik ${pendingDelete?.pemohon ?? ""}?`}
+        confirmLabel="Ya, Hapus"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
       />
       <Toast toast={toast} onClose={closeToast} />
     </div>

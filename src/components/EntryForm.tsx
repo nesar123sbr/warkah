@@ -111,12 +111,11 @@ export default function EntryForm({ onAdd, editingItem, onSaveEdit, onCancelEdit
       refs.current.pemohon?.focus();
       return;
     }
-    const cleaned: WarkahDraft = {
-      ...draft,
-      pemohon: draft.pemohon.toString().trim(),
-      nib: String(draft.nib).trim(), // apa adanya, tanpa padding
-      su: String(draft.su).trim() || "-",
-    };
+    const cleaned = { ...draft } as WarkahDraft;
+    for (const key of ORDER) {
+      (cleaned as unknown as Record<string, string>)[key] = String(draft[key]).trim();
+    }
+    cleaned.su = String(cleaned.su) || "-";
 
     if (editingItem) {
       onSaveEdit(editingItem.id, cleaned);
@@ -146,13 +145,22 @@ export default function EntryForm({ onAdd, editingItem, onSaveEdit, onCancelEdit
     }
     if (e.key !== "Enter") return;
     e.preventDefault();
-    // Mode tambah + sticky: field terakhir = SU. Selain itu: Kolom.
-    const order = sticky && !isEditing ? ORDER.slice(0, 5) : ORDER;
-    const idx = order.indexOf(key);
-    if (idx === -1 || idx === order.length - 1) {
+    // Di SU (mode tambah + sticky aktif): submit hanya jika Desa, Kecamatan, Tahun sudah terisi.
+    // Jika belum, lanjut ke Desa dan seterusnya sampai Kolom (submit di Kolom).
+    if (key === "su" && sticky && !isEditing) {
+      const mainFilled = [draft.desa, draft.kecamatan, draft.tahun].every(
+        (v) => String(v).trim() !== "",
+      );
+      if (mainFilled) {
+        submit();
+        return;
+      }
+    }
+    const idx = ORDER.indexOf(key);
+    if (idx === ORDER.length - 1) {
       submit();
     } else {
-      refs.current[order[idx + 1]]?.focus();
+      refs.current[ORDER[idx + 1]]?.focus();
     }
   };
 
@@ -252,7 +260,7 @@ export default function EntryForm({ onAdd, editingItem, onSaveEdit, onCancelEdit
         Tekan <kbd className="rounded border border-slate-300 bg-slate-50 px-1">Enter</kbd> untuk pindah field.
         {isEditing
           ? " Enter pada field terakhir menyimpan perubahan; Esc membatalkan."
-          : " Enter pada field terakhir menambah data dan fokus kembali ke Pemohon."}
+          : " Enter di SU langsung menambah data jika Desa, Kecamatan, dan Tahun sudah terisi (fokus kembali ke Pemohon); jika belum, lanjut ke Desa sampai Kolom."}
       </p>
     </section>
   );
